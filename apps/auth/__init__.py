@@ -1,3 +1,3 @@
-from apps.auth.services import hash_password
+from apps.auth.services import hash_password, decode_token
 
-__all__ = ["hash_password"]
+__all__ = ["hash_password", "decode_token"]

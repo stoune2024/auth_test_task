@@ -8,11 +8,11 @@ import os
 
 
 class Settings(BaseSettings):
-    DB_HOST: str = Field(default="postgres")
-    DB_PORT: str = Field(default="5432")
-    DB_USER: str = Field(default="postgres")
-    DB_PASS: str = Field(default="postgres")
-    DB_NAME: str = Field(default="authdb")
+    DB_HOST: str
+    DB_PORT: str
+    DB_USER: str
+    DB_PASS: str
+    DB_NAME: str
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
@@ -27,6 +27,13 @@ class Settings(BaseSettings):
         return (
             f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@"
             f"{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
+
+    @property
+    def system_db_url(self):
+        return (
+            f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@"
+            f"{self.DB_HOST}:{self.DB_PORT}/{self.DB_USER}"
         )
 
 
