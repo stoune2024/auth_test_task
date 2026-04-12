@@ -10,6 +10,6 @@ async def get_rules(user=Depends(get_current_user)):
     return {"message": "list of access rules"}
 
 
-@user_router.get("/")
-async def products(user=Depends(permission_required("products", "read", session))):
-    return [{"id": 1, "name": "Laptop", "owner_id": 1}]
+# @user_router.get("/")
+# async def products(user=Depends(permission_required("products", "read", session))):
+#     return [{"id": 1, "name": "Laptop", "owner_id": 1}]

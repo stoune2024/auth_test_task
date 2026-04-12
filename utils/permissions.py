@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer
 from apps.auth.services import decode_token
 from apps.user.repository import UserRepository, get_session, AsyncSession
-from apps.user.models import AccessRule, BusinessElement
+from apps.user.schemas import AccessRule, BusinessElement
 from sqlalchemy import select
 
 

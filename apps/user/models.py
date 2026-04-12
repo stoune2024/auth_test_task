@@ -1,43 +1,49 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import String, Boolean, ForeignKey
+import re
+from typing import Any
+
+from pydantic import (
+    BaseModel,
+    Field,
+    EmailStr,
+    field_validator,
+    ConfigDict,
+)
+from pydantic.alias_generators import to_camel
+
+unique_user_ids_list = []
 
 
-class Base(DeclarativeBase):
-    pass
+class UserPublic(BaseModel):
+    id: int = Field(
+        title="Уникальный идентификатор пользователя",
+        description="Позволяет упорядочить пользователей",
+    )
+    email: EmailStr = Field(title="Электронная почта", description="Электронная почта")
+    is_active: bool = Field(
+        title="Является ли активным пользователем",
+        description="Проверка на авторизацию",
+    )
+    role_id: int
 
 
-class Role(Base):
-    __tablename__ = "roles"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String, unique=True)
+class User(UserPublic):
+    password_hash: str = Field(
+        title="Хеш пользовательского пароля",
+        description="Нужен для Oauth. Хранится в БД",
+    )
 
 
-class User(Base):
-    __tablename__ = "users"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String, unique=True)
-    password_hash: Mapped[str] = mapped_column(String)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
-    role = relationship("Role")
+class UserCreate(UserPublic):
+    email: EmailStr
+    password: str = Field(
+        title="Пароль пользователя",
+        description="Используется Oauth",
+    )
 
 
-class BusinessElement(Base):
-    __tablename__ = "business_elements"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String, unique=True)
-
-
-class AccessRule(Base):
-    __tablename__ = "access_role_rules"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
-    element_id: Mapped[int] = mapped_column(ForeignKey("business_elements.id"))
-
-    read_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    read_all_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    create_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    update_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    update_all_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    delete_permission: Mapped[bool] = mapped_column(Boolean, default=False)
-    delete_all_permission: Mapped[bool] = mapped_column(Boolean, default=False)
+class UserAuth(BaseModel):
+    email: EmailStr
+    password: str = Field(
+        title="Пароль пользователя",
+        description="Используется Oauth",
+    )

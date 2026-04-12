@@ -1,8 +1,12 @@
+from typing import Annotated, Any
+
+from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from settings.settings import settings
-from apps.user.models import User, Base
+from apps.user.schemas import Base, User
 from sqlalchemy import text
+from apps.user.models import UserPublic
 
 engine = create_async_engine(settings.db_url, echo=False, future=True)
 
@@ -38,6 +42,9 @@ async def get_session() -> AsyncSession:
         yield session
 
 
+SessionDep = Annotated[Any, Depends(get_session)]
+
+
 class UserRepository:
     """
 
@@ -55,10 +62,21 @@ class UserRepository:
 
     @staticmethod
     async def create(session, user: User):
-        session.add(user)
+        user_db = User(
+            email=user.email,
+            password_hash=user.password_hash,
+            is_active=user.is_active,
+            role_id=user.is_active,
+        )
+        session.add(user_db)
         await session.commit()
-        await session.refresh(user)
+        await session.refresh(user_db)
         return user
+
+    @staticmethod
+    async def soft_delete(session, user: User):
+        user.is_active = False
+        await session.commit()
 
 
 async def init_db():
