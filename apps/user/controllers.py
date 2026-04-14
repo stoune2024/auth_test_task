@@ -1,12 +1,11 @@
 from apps.user.routers import user_router
-from fastapi import APIRouter, Depends, HTTPException, Path, Form, status
+from fastapi import Depends, HTTPException, Path, Form, status
 from typing_extensions import Annotated
-from utils.permissions import get_current_user, permission_required
+from utils.permissions import get_current_user
 from apps.user.repository import SessionDep
 from utils.db_filler import seed_access_data
 from apps.auth.services import ProtectionDep
 from apps.user.models import UpdateUserSchema
-from apps.user.schemas import User
 from apps.user.repository import UserRepository
 
 
@@ -39,7 +38,7 @@ async def update_user(
     ):  # Здесь можно было бы добавить функционал получения списка ролей из БД путем отдельного запроса или запросить роли из Кэша. Не стал усложнять
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Отсутствуют необходимые права",
+            detail="Отсутствуют необходимые права",
         )
     return await UserRepository.update_user(user_id, user, session)
 
@@ -55,6 +54,6 @@ async def user_soft_delete(
     ):  # Здесь можно было бы добавить функционал получения списка ролей из БД путем отдельного запроса или запросить роли из Кэша. Не стал усложнять
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Отсутствуют необходимые права",
+            detail="Отсутствуют необходимые права",
         )
     return await UserRepository.soft_delete(user_id, session)

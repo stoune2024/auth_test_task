@@ -5,9 +5,8 @@ from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from settings.settings import settings
-from apps.user.schemas import Base, User
+from apps.user.schemas import Base, User, BlacklistedToken
 from sqlalchemy import text
-from apps.user.models import UserPublic
 
 engine = create_async_engine(settings.db_url, echo=False, future=True)
 
@@ -49,7 +48,7 @@ SessionDep = Annotated[Any, Depends(get_session)]
 class UserRepository:
     """
 
-    Класс для взаимодействия с пользователем
+    Класс для взаимодействия с БД
 
     """
 
@@ -105,6 +104,24 @@ class UserRepository:
         except Exception as e:
             await session.rollback()
             return {"message": f"something went wrong...: {e}"}
+
+    @staticmethod
+    async def blacklist_token(session, token: str):
+        blacklisted = BlacklistedToken(token=token)
+
+        session.add(blacklisted)
+
+        await session.commit()
+
+        return blacklisted
+
+    @staticmethod
+    async def is_token_blacklisted(session, token: str) -> bool:
+        existing = await session.scalar(
+            select(BlacklistedToken).where(BlacklistedToken.token == token)
+        )
+
+        return existing is not None
 
 
 async def init_db():

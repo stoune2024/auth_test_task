@@ -1,11 +1,11 @@
-import bcrypt, jwt
+import bcrypt
+import jwt
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException, status, Depends, Request
 
-from settings.settings import settings, SettingsDep
+from settings.settings import settings
 from apps.user.repository import UserRepository, SessionDep
-from datetime import timedelta
 
 from typing_extensions import Annotated
 
@@ -61,9 +61,21 @@ async def generate_tokens(form_data, session: SessionDep):
     }
 
 
-def verify_token(request: Request):
+async def verify_token(request: Request, session: SessionDep):
     try:
         token = request.cookies.get("access-token")
+
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Токен доступа не найден",
+            )
+        if await UserRepository.is_token_blacklisted(session, token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Токен доступа не валиден",
+            )
+
         token_payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )

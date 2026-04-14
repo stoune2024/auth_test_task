@@ -1,14 +1,8 @@
-import re
-from typing import Any, Optional
-
 from pydantic import (
     BaseModel,
     Field,
     EmailStr,
-    field_validator,
-    ConfigDict,
 )
-from pydantic.alias_generators import to_camel
 
 unique_user_ids_list = []
 

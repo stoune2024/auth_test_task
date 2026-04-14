@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import String, Boolean, ForeignKey
+from sqlalchemy import String, Boolean, ForeignKey, DateTime
 
 
 class Base(DeclarativeBase):
@@ -41,3 +43,13 @@ class AccessRule(Base):
     update_all_permission: Mapped[bool] = mapped_column(Boolean, default=False)
     delete_permission: Mapped[bool] = mapped_column(Boolean, default=False)
     delete_all_permission: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class BlacklistedToken(Base):
+    __tablename__ = "blacklisted_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    token: Mapped[str] = mapped_column(String, unique=True, index=True)
+
+    blacklisted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

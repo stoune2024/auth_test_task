@@ -1,12 +1,11 @@
-from typing import Annotated, Any
+from typing import Annotated
 
-from fastapi import Form, status, Body, HTTPException, Request
+from fastapi import Form, status, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from apps.user.repository import UserRepository, SessionDep
 from apps.auth.routers import auth_router
-from apps.user.models import UserCreate, User, UserPublic, UserAuth
-from apps.auth.services import hash_password, generate_tokens, ProtectionDep
-from settings.settings import SettingsDep
+from apps.user.models import UserCreate, User, UserAuth
+from apps.auth.services import hash_password, generate_tokens
 
 
 @auth_router.post("/reg")
@@ -55,15 +54,27 @@ async def validate_login_form(
         return response
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail=f"Учетная запись удалена (неактивна)",
+        detail="Учетная запись удалена (неактивна)",
     )
 
 
 @auth_router.get("/log_out")
-async def log_out(session: SessionDep):
+async def log_out(session: SessionDep, request: Request):
+
+    token = request.cookies.get("access-token")
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Токен доступа не найден",
+        )
+
+    await UserRepository.blacklist_token(session, token)
+
     response = RedirectResponse(
         "/auth/suc_log_out", status_code=status.HTTP_303_SEE_OTHER
     )
+
     response.delete_cookie(key="access-token")
 
     return response
