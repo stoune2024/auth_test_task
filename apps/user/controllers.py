@@ -1,7 +1,6 @@
 from apps.user.routers import user_router
-from fastapi import Depends, HTTPException, Path, Form, status
+from fastapi import HTTPException, Path, Form, status
 from typing_extensions import Annotated
-from utils.permissions import get_current_user
 from apps.user.repository import SessionDep
 from utils.db_filler import seed_access_data
 from apps.auth.services import ProtectionDep
@@ -15,15 +14,16 @@ async def db_filler(session: SessionDep):
 
 
 @user_router.get("/access-rules")
-async def get_rules(user=Depends(get_current_user)):
-    if user.role.name != "admin":
-        raise HTTPException(403)
-    return {"message": "list of access rules"}
-
-
-# @user_router.get("/")
-# async def products(user=Depends(permission_required("products", "read", session))):
-#     return [{"id": 1, "name": "Laptop", "owner_id": 1}]
+async def get_rules(protection: ProtectionDep, session: SessionDep):
+    """
+    Логику изменения правил доступа решил не писать, так как все упирается в банальный CRUD с проверкой ProtectionDep
+    """
+    if protection != 1:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Отсутствуют необходимые права",
+        )
+    return await UserRepository.get_rules(session)
 
 
 @user_router.patch("/{user_id}")

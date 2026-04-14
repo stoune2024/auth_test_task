@@ -5,7 +5,7 @@ from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from settings.settings import settings
-from apps.user.schemas import Base, User, BlacklistedToken
+from apps.user.schemas import Base, User, BlacklistedToken, AccessRule
 from sqlalchemy import text
 
 engine = create_async_engine(settings.db_url, echo=False, future=True)
@@ -122,6 +122,12 @@ class UserRepository:
         )
 
         return existing is not None
+
+    @staticmethod
+    async def get_rules(session):
+        result = await session.execute(select(AccessRule))
+
+        return result.scalars().all()
 
 
 async def init_db():
