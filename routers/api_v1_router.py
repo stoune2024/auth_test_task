@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from uvicorn import run
-from apps.user.repository import init_db
+from apps.user.repository import init_db, SessionDep
 from apps.user.controllers import user_router
 from apps.auth.controllers import auth_router
+from utils.db_filler import seed_access_data
 
 
 app = FastAPI(

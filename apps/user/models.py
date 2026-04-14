@@ -1,5 +1,5 @@
 import re
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import (
     BaseModel,
@@ -47,3 +47,8 @@ class UserAuth(BaseModel):
         title="Пароль пользователя",
         description="Используется Oauth",
     )
+
+
+class UpdateUserSchema(BaseModel):
+    email: EmailStr | None = None
+    password: str | None = None

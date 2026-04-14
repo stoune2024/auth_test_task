@@ -1,6 +1,7 @@
 from typing import Annotated, Any
 
 from fastapi import Depends
+from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from settings.settings import settings
@@ -53,7 +54,7 @@ class UserRepository:
     """
 
     @staticmethod
-    async def get_by_email(session, email: str):
+    async def get_by_email(session, email: EmailStr):
         return await session.scalar(select(User).where(User.email == email))
 
     @staticmethod
@@ -66,7 +67,7 @@ class UserRepository:
             email=user.email,
             password_hash=user.password_hash,
             is_active=user.is_active,
-            role_id=user.is_active,
+            role_id=user.role_id,
         )
         session.add(user_db)
         await session.commit()
@@ -74,9 +75,36 @@ class UserRepository:
         return user
 
     @staticmethod
-    async def soft_delete(session, user: User):
-        user.is_active = False
-        await session.commit()
+    async def update_user(user_id, user, session):
+        """
+        Обновляет пользователя и сохраняет в БД. Решил не усложнять доп. проверками и ограничился только обновлением email
+        """
+
+        try:
+            db_data = await session.get(User, user_id)
+
+            db_data.email = user.email
+            session.add(db_data)
+            await session.commit()
+            await session.refresh(db_data)
+            return {"message": "User updated!"}
+        except Exception as e:
+            await session.rollback()
+            return {"message": f"something went wrong...: {e}"}
+
+    @staticmethod
+    async def soft_delete(user_id, session):
+        try:
+            db_data = await session.get(User, user_id)
+
+            db_data.is_active = False
+            session.add(db_data)
+            await session.commit()
+            await session.refresh(db_data)
+            return {"message": "User soft deleted!"}
+        except Exception as e:
+            await session.rollback()
+            return {"message": f"something went wrong...: {e}"}
 
 
 async def init_db():

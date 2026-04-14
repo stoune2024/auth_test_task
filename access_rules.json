@@ -1,0 +1,40 @@
+{
+  "roles": [
+    {"name": "admin"},
+    {"name": "manager"},
+    {"name": "user"}
+  ],
+
+  "business_elements": [
+    {"name": "users"},
+    {"name": "products"},
+    {"name": "orders"},
+    {"name": "access_rules"}
+  ],
+
+  "access_rules": [
+    {
+      "role": "admin",
+      "element": "users",
+      "read_permission": true,
+      "read_all_permission": true,
+      "create_permission": true,
+      "update_permission": true,
+      "update_all_permission": true,
+      "delete_permission": true,
+      "delete_all_permission": true
+    },
+
+    {
+      "role": "user",
+      "element": "products",
+      "read_permission": true,
+      "read_all_permission": false,
+      "create_permission": true,
+      "update_permission": true,
+      "update_all_permission": false,
+      "delete_permission": true,
+      "delete_all_permission": false
+    }
+  ]
+}

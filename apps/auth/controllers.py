@@ -1,11 +1,11 @@
 from typing import Annotated, Any
 
-from fastapi import Form, status, Body
+from fastapi import Form, status, Body, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from apps.user.repository import UserRepository, SessionDep
 from apps.auth.routers import auth_router
 from apps.user.models import UserCreate, User, UserPublic, UserAuth
-from apps.auth.services import hash_password, generate_tokens
+from apps.auth.services import hash_password, generate_tokens, ProtectionDep
 from settings.settings import SettingsDep
 
 
@@ -37,21 +37,35 @@ async def validate_login_form(
     form_data: Annotated[UserAuth, Form()],
     session: SessionDep,
 ):
-    tokens = await generate_tokens(form_data, session)
-    access_token = tokens.get("access_token")
-    refresh_token = tokens.get("refresh_token")
+    """
+    Эндпоинт аутентификации/авторизации зарегистрированного пользователя
+    """
+    user = await UserRepository.get_by_email(session, form_data.email)
+    if user.is_active:
+        tokens = await generate_tokens(form_data, session)
+        access_token = tokens.get("access_token")
 
-    redirect_url = "/auth/suc_auth"
-    headers = {"Authorization": f"Bearer {access_token}"}
+        response = RedirectResponse(
+            "/auth/suc_auth", status_code=status.HTTP_303_SEE_OTHER
+        )
+        response.set_cookie(
+            key="access-token", value=access_token, httponly=True, secure=True
+        )
+
+        return response
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=f"Учетная запись удалена (неактивна)",
+    )
+
+
+@auth_router.get("/log_out")
+async def log_out(session: SessionDep):
     response = RedirectResponse(
-        redirect_url, status_code=status.HTTP_303_SEE_OTHER, headers=headers
+        "/auth/suc_log_out", status_code=status.HTTP_303_SEE_OTHER
     )
-    response.set_cookie(
-        key="access-token", value=access_token, httponly=True, secure=True
-    )
-    response.set_cookie(
-        key="refresh-token", value=refresh_token, httponly=True, secure=True
-    )
+    response.delete_cookie(key="access-token")
+
     return response
 
 
@@ -64,35 +78,10 @@ def successfull_auth():
     return {"message": "Авторизация успешна, токен доступа сохранен в куках!"}
 
 
-# @auth_router.patch("/users/{user_id}", response_model=UserPublic)
-# def update_user(
-#     user_id: Annotated[int, Path(title="Идентификатор пользователя", ge=0, le=1000)],
-#     user: Annotated[UserCreate, Form()],
-#     connection: ConnectionDep,
-#     protection: ProtectionDep,
-# ):
-#     """
-#     Эндпоинт обновления данных о пользователе.
-#     :param protection: Объект типа TokenData. Нужен для проверки авторизации пользователя
-#     :param user_id: Параметр пути, обозначающий идентификатор искомого пользователя.
-#     :param user: Данные о пользователе, приходящие из HTML формы. Валидируются Pydantic моделью UserUpdate
-#     :param connection: Объект типа Connection (соединение) для взаимодействия с БД
-#     :return: Объект пользователь, валидируемый моделью UserPublic
-#     """
-#     try:
-#         if protection:
-#             user_from_db = connection.read_user_by_id(user_id)
-#             if not user_from_db:
-#                 raise HTTPException(status_code=404, detail="Пользователь не найден")
-#             user_data = user.model_dump(exclude_unset=True)
-#             extra_data = {}
-#             if "password" in user_data:
-#                 password = user_data["password"]
-#                 hashed_password = pwd_context.hash(password)
-#                 extra_data["hashed_password"] = hashed_password
-#             del user_data["password"]
-#             user_from_db.update(user_data)
-#             user_from_db.update(extra_data)
-#             return user_from_db
-#     except Exception as e:
-#         return {"message": f"Возникла ошибка: {e}"}
+@auth_router.get("/suc_log_out")
+def successfull_log_out():
+    """
+    Эндпоинт для редиректа после успешной авторизации
+    :return: JSON-оповещение
+    """
+    return {"message": "Вы успешно вышли из учетной записи!"}
